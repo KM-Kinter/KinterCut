@@ -179,35 +179,32 @@ func (h *LinkHandler) RedirectLink(c *fiber.Ctx) error {
 		return c.Redirect("/expired", fiber.StatusTemporaryRedirect)
 	}
 
-	// Track click (for all links, not just admin)
-	go h.trackClick(&link, c)
+	// IMPORTANT: Extract all data from context BEFORE spawning goroutine
+	// Fiber contexts are pooled and will be reused after the request completes
+	ip := c.IP()
+	if forwardedFor := c.Get("X-Forwarded-For"); forwardedFor != "" {
+		ips := strings.Split(forwardedFor, ",")
+		ip = strings.TrimSpace(ips[0])
+	}
+	userAgent := c.Get("User-Agent")
+	if len(userAgent) > 512 {
+		userAgent = userAgent[:512]
+	}
+
+	// Track click asynchronously with extracted data
+	go h.trackClick(link.ID, ip, userAgent)
 
 	// Redirect to original URL
 	return c.Redirect(link.OriginalURL, fiber.StatusTemporaryRedirect)
 }
 
 // trackClick records click analytics asynchronously
-func (h *LinkHandler) trackClick(link *models.Link, c *fiber.Ctx) {
-	// Get client IP
-	ip := c.IP()
-
-	// Get IP from X-Forwarded-For header if behind proxy
-	if forwardedFor := c.Get("X-Forwarded-For"); forwardedFor != "" {
-		ips := strings.Split(forwardedFor, ",")
-		ip = strings.TrimSpace(ips[0])
-	}
-
-	// Get User-Agent
-	userAgent := c.Get("User-Agent")
-	if len(userAgent) > 512 {
-		userAgent = userAgent[:512]
-	}
-
+func (h *LinkHandler) trackClick(linkID uint, ip string, userAgent string) {
 	// Get geolocation
 	geo, _ := h.geoService.GetLocation(ip)
 
 	click := models.Click{
-		LinkID:    link.ID,
+		LinkID:    linkID,
 		ClickedAt: time.Now(),
 		IPAddress: ip,
 		UserAgent: userAgent,
@@ -222,7 +219,7 @@ func (h *LinkHandler) trackClick(link *models.Link, c *fiber.Ctx) {
 	}
 
 	// Also update click count on the link
-	database.DB.Model(link).UpdateColumn("click_count", link.ClickCount+1)
+	database.DB.Model(&models.Link{}).Where("id = ?", linkID).UpdateColumn("click_count", database.DB.Raw("click_count + 1"))
 }
 
 // generateSlug creates a unique 7-character slug
