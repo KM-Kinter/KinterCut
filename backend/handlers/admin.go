@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"log"
+	"strings"
 	"time"
 
 	"link-shortener/config"
@@ -47,6 +49,13 @@ func (h *AdminHandler) Login(c *fiber.Ctx) error {
 
 	// Validate credentials
 	if req.Username != h.config.AdminUsername || req.Password != h.config.AdminPassword {
+		// Log failed login attempt with IP
+		ip := c.IP()
+		if forwardedFor := c.Get("X-Forwarded-For"); forwardedFor != "" {
+			ips := strings.Split(forwardedFor, ",")
+			ip = strings.TrimSpace(ips[0])
+		}
+		log.Printf("FAILED LOGIN ATTEMPT: username=%s, ip=%s, user_agent=%s", req.Username, ip, c.Get("User-Agent"))
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": "Invalid credentials",
 		})
@@ -205,11 +214,11 @@ func (h *AdminHandler) DeleteLink(c *fiber.Ctx) error {
 		})
 	}
 
-	// Delete clicks first
-	database.DB.Where("link_id = ?", link.ID).Delete(&models.Click{})
+	// Delete clicks first (hard delete)
+	database.DB.Unscoped().Where("link_id = ?", link.ID).Delete(&models.Click{})
 
-	// Delete link
-	if err := database.DB.Delete(&link).Error; err != nil {
+	// Delete link (hard delete using Unscoped so slug can be reused)
+	if err := database.DB.Unscoped().Delete(&link).Error; err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to delete link",
 		})
