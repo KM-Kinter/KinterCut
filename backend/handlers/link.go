@@ -216,7 +216,13 @@ func (h *LinkHandler) trackClick(link *models.Link, c *fiber.Ctx) {
 		Region:    geo.Region,
 	}
 
-	database.DB.Create(&click)
+	if err := database.DB.Create(&click).Error; err != nil {
+		// Log error but don't fail - click tracking is best-effort
+		println("Error tracking click:", err.Error())
+	}
+
+	// Also update click count on the link
+	database.DB.Model(link).UpdateColumn("click_count", link.ClickCount+1)
 }
 
 // generateSlug creates a unique 7-character slug
