@@ -3,15 +3,17 @@ FROM golang:1.21-alpine AS builder
 
 WORKDIR /app
 
-# Copy go mod files and vendor directory
+# Copy go mod files
 COPY go.mod go.sum ./
-COPY vendor/ ./vendor/
+
+# Download dependencies
+RUN go mod download
 
 # Copy source code
 COPY . .
 
-# Build with vendor flag (no network needed)
-RUN CGO_ENABLED=0 GOOS=linux go build -mod=vendor -a -installsuffix cgo -o main .
+# Build the application
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
 
 # Final stage
 FROM alpine:latest
