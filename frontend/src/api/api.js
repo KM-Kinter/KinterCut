@@ -76,6 +76,11 @@ export const createAdminLink = async (url, customSlug = '') => {
     return response.data
 }
 
+export const getLoginAttempts = async () => {
+    const response = await api.get('/api/admin/logins')
+    return response.data
+}
+
 // User link history (localStorage)
 export const saveUserLink = (link) => {
     const links = getUserLinkHistory()

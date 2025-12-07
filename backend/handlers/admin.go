@@ -47,19 +47,38 @@ func (h *AdminHandler) Login(c *fiber.Ctx) error {
 		})
 	}
 
+	// Get client IP
+	ip := c.IP()
+	if forwardedFor := c.Get("X-Forwarded-For"); forwardedFor != "" {
+		ips := strings.Split(forwardedFor, ",")
+		ip = strings.TrimSpace(ips[0])
+	}
+	userAgent := c.Get("User-Agent")
+	if len(userAgent) > 512 {
+		userAgent = userAgent[:512]
+	}
+
 	// Validate credentials
-	if req.Username != h.config.AdminUsername || req.Password != h.config.AdminPassword {
-		// Log failed login attempt with IP
-		ip := c.IP()
-		if forwardedFor := c.Get("X-Forwarded-For"); forwardedFor != "" {
-			ips := strings.Split(forwardedFor, ",")
-			ip = strings.TrimSpace(ips[0])
-		}
-		log.Printf("FAILED LOGIN ATTEMPT: username=%s, ip=%s, user_agent=%s", req.Username, ip, c.Get("User-Agent"))
+	success := req.Username == h.config.AdminUsername && req.Password == h.config.AdminPassword
+
+	// Record login attempt
+	attempt := models.LoginAttempt{
+		Username:  req.Username,
+		IPAddress: ip,
+		UserAgent: userAgent,
+		Success:   success,
+		CreatedAt: time.Now(),
+	}
+	database.DB.Create(&attempt)
+
+	if !success {
+		log.Printf("FAILED LOGIN ATTEMPT: username=%s, ip=%s", req.Username, ip)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": "Invalid credentials",
 		})
 	}
+
+	log.Printf("SUCCESSFUL LOGIN: username=%s, ip=%s", req.Username, ip)
 
 	// Generate JWT
 	expiresAt := time.Now().Add(24 * time.Hour)
@@ -288,5 +307,33 @@ func (h *AdminHandler) CreateAdminLink(c *fiber.Ctx) error {
 		OriginalURL: link.OriginalURL,
 		ExpiresAt:   nil,
 		Permanent:   true,
+	})
+}
+
+// GetLoginAttempts returns recent login attempts for security auditing
+func (h *AdminHandler) GetLoginAttempts(c *fiber.Ctx) error {
+	var attempts []models.LoginAttempt
+
+	// Get last 100 login attempts, newest first
+	err := database.DB.
+		Order("created_at DESC").
+		Limit(100).
+		Find(&attempts).Error
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to fetch login attempts",
+		})
+	}
+
+	// Count failed attempts in last 24 hours
+	var failedLast24h int64
+	database.DB.Model(&models.LoginAttempt{}).
+		Where("success = ? AND created_at > ?", false, time.Now().Add(-24*time.Hour)).
+		Count(&failedLast24h)
+
+	return c.JSON(fiber.Map{
+		"attempts":        attempts,
+		"total":           len(attempts),
+		"failed_last_24h": failedLast24h,
 	})
 }

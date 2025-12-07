@@ -81,6 +81,7 @@ func main() {
 	adminProtected := admin.Group("", middleware.AuthRequired(cfg))
 	adminProtected.Get("/my", adminHandler.GetMyStats)
 	adminProtected.Get("/users", adminHandler.GetUserLinks)
+	adminProtected.Get("/logins", adminHandler.GetLoginAttempts)
 	adminProtected.Get("/links/:id", adminHandler.GetLinkDetails)
 	adminProtected.Delete("/links/:id", adminHandler.DeleteLink)
 	adminProtected.Post("/links", adminHandler.CreateAdminLink)

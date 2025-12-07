@@ -52,7 +52,7 @@ func Connect(databaseURL string) error {
 // Migrate runs database migrations
 func Migrate() error {
 	log.Println("Running database migrations...")
-	err := DB.AutoMigrate(&models.Link{}, &models.Click{})
+	err := DB.AutoMigrate(&models.Link{}, &models.Click{}, &models.LoginAttempt{})
 	if err != nil {
 		return fmt.Errorf("failed to run migrations: %w", err)
 	}
