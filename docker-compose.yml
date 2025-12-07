@@ -1,0 +1,62 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: linkshortener-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-linkuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-linkpass}
+      POSTGRES_DB: ${POSTGRES_DB:-linkdb}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-linkuser} -d ${POSTGRES_DB:-linkdb}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - linkshortener
+
+  # Go Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: linkshortener-api
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-linkuser}:${POSTGRES_PASSWORD:-linkpass}@postgres:5432/${POSTGRES_DB:-linkdb}?sslmode=disable
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
+      PUBLIC_LINK_TTL: ${PUBLIC_LINK_TTL:-48h}
+      BASE_URL: ${BASE_URL:-http://localhost:3000}
+      PORT: 8080
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - linkshortener
+
+  # React Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: linkshortener-web
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    depends_on:
+      - backend
+    networks:
+      - linkshortener
+
+volumes:
+  postgres_data:
+
+networks:
+  linkshortener:
+    driver: bridge
