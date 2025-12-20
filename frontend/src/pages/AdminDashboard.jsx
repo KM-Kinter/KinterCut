@@ -66,11 +66,6 @@ function AdminDashboard() {
     }
 
     const handleDelete = async (id, isUserLink = false) => {
-        const message = isUserLink
-            ? 'Delete this user link? They may still see it in their browser history.'
-            : 'Are you sure you want to delete this link?'
-        if (!confirm(message)) return
-
         setDeleting(id)
         try {
             await deleteLink(id)
@@ -199,12 +194,13 @@ function AdminDashboard() {
 
                     {/* Created Link Result */}
                     {createdLink && (
-                        <div className="mt-4 sm:mt-6 p-4 sm:p-5 bg-dark-800/50 rounded-xl border border-dark-600 animate-fade-in">
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                        <div className="mt-4 sm:mt-6 glass-card p-4 sm:p-6 animate-fade-in">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3 sm:mb-4">
                                 <span className="text-sm text-dark-400">Your shortened link:</span>
                                 <span className="badge-success self-start sm:self-auto">Permanent</span>
                             </div>
-                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 p-3 bg-dark-900/50 rounded-xl">
+
+                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 p-3 sm:p-4 bg-dark-800/50 rounded-xl">
                                 <a
                                     href={createdLink.short_url}
                                     target="_blank"
@@ -234,7 +230,8 @@ function AdminDashboard() {
                                     )}
                                 </button>
                             </div>
-                            <div className="mt-3 text-sm text-dark-500">
+
+                            <div className="mt-3 sm:mt-4 text-sm text-dark-500">
                                 <span className="block truncate">Original: {createdLink.original_url}</span>
                             </div>
                         </div>
@@ -356,7 +353,7 @@ function AdminDashboard() {
                                                     <span>{formatDate(link.created_at)}</span>
                                                     {link.expires_at && (
                                                         <span className="text-yellow-500" title={`Expires: ${new Date(link.expires_at).toLocaleString()}`}>
-                                                            → {new Date(link.expires_at).toLocaleDateString()}
+                                                            → {new Date(link.expires_at).toLocaleString('en-GB', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
                                                         </span>
                                                     )}
                                                 </div>
