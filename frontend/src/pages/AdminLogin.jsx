@@ -24,7 +24,7 @@ function AdminLogin() {
         try {
             const data = await adminLogin(username, password)
             login(data.token, data.expires_at)
-            navigate('/adminek/dashboard')
+            navigate('/admin/dashboard')
         } catch (err) {
             setError(err.response?.data?.error || 'Login failed. Check your credentials.')
         } finally {

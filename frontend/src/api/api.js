@@ -25,7 +25,7 @@ api.interceptors.response.use(
         if (error.response?.status === 401) {
             localStorage.removeItem('admin_token')
             localStorage.removeItem('token_expires_at')
-            window.location.href = '/adminek'
+            window.location.href = '/admin'
         }
         return Promise.reject(error)
     }

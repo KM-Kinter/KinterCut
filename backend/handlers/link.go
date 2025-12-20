@@ -18,13 +18,15 @@ import (
 
 // Reserved slugs that cannot be used by users
 var reservedSlugs = map[string]bool{
-	"adminek": true,
-	"kinter":  true,
-	"meine":   true,
-	"my":      true,
-	"api":     true,
-	"health":  true,
-	"expired": true,
+	"admin":     true,
+	"adminek":   true,
+	"not-found": true,
+	"kinter":    true,
+	"me":        true,
+	"my":        true,
+	"api":       true,
+	"health":    true,
+	"expired":   true,
 }
 
 // Slug validation regex (alphanumeric, hyphens, underscores)
@@ -169,9 +171,7 @@ func (h *LinkHandler) RedirectLink(c *fiber.Ctx) error {
 	// Find link
 	var link models.Link
 	if err := database.DB.Where("slug = ?", slug).First(&link).Error; err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"error": "Link not found",
-		})
+		return c.Redirect("/not-found", fiber.StatusTemporaryRedirect)
 	}
 
 	// Check if link is expired

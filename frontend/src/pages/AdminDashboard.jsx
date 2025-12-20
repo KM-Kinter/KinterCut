@@ -15,6 +15,8 @@ function AdminDashboard() {
     const [creating, setCreating] = useState(false)
     const [deleting, setDeleting] = useState(null)
     const [activeTab, setActiveTab] = useState('my')
+    const [createdLink, setCreatedLink] = useState(null)
+    const [copied, setCopied] = useState(false)
     const { logout } = useAuth()
     const navigate = useNavigate()
 
@@ -51,7 +53,8 @@ function AdminDashboard() {
 
         setCreating(true)
         try {
-            await createAdminLink(processedUrl, customSlug.trim())
+            const result = await createAdminLink(processedUrl, customSlug.trim())
+            setCreatedLink(result)
             setNewUrl('')
             setCustomSlug('')
             fetchData()
@@ -85,7 +88,13 @@ function AdminDashboard() {
 
     const handleLogout = () => {
         logout()
-        navigate('/adminek')
+        navigate('/admin')
+    }
+
+    const handleCopy = async (url) => {
+        await navigator.clipboard.writeText(url)
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
     }
 
     const formatDate = (dateString) => {
@@ -187,6 +196,49 @@ function AdminDashboard() {
                             </button>
                         </div>
                     </form>
+
+                    {/* Created Link Result */}
+                    {createdLink && (
+                        <div className="mt-4 sm:mt-6 p-4 sm:p-5 bg-dark-800/50 rounded-xl border border-dark-600 animate-fade-in">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                                <span className="text-sm text-dark-400">Your shortened link:</span>
+                                <span className="badge-success self-start sm:self-auto">Permanent</span>
+                            </div>
+                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 p-3 bg-dark-900/50 rounded-xl">
+                                <a
+                                    href={createdLink.short_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex-1 text-base sm:text-lg font-mono text-primary-400 hover:text-primary-300 truncate"
+                                >
+                                    {createdLink.short_url}
+                                </a>
+                                <button
+                                    onClick={() => handleCopy(createdLink.short_url)}
+                                    className="btn-secondary py-2 px-4 text-sm self-end sm:self-auto"
+                                >
+                                    {copied ? (
+                                        <span className="flex items-center gap-1 text-green-400">
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                            </svg>
+                                            Copied!
+                                        </span>
+                                    ) : (
+                                        <span className="flex items-center gap-1">
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                            </svg>
+                                            Copy
+                                        </span>
+                                    )}
+                                </button>
+                            </div>
+                            <div className="mt-3 text-sm text-dark-500">
+                                <span className="block truncate">Original: {createdLink.original_url}</span>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {error && (
@@ -241,8 +293,8 @@ function AdminDashboard() {
                                         <div
                                             key={attempt.id}
                                             className={`p-3 sm:p-4 rounded-xl ${attempt.success
-                                                    ? 'bg-green-500/10 border border-green-500/30'
-                                                    : 'bg-red-500/10 border border-red-500/30'
+                                                ? 'bg-green-500/10 border border-green-500/30'
+                                                : 'bg-red-500/10 border border-red-500/30'
                                                 }`}
                                         >
                                             <div className="flex items-start justify-between gap-2 mb-2">
@@ -300,22 +352,49 @@ function AdminDashboard() {
                                                 {link.original_url}
                                             </p>
                                             <div className="flex items-center justify-between gap-2">
-                                                <span className="text-xs text-dark-500">
-                                                    {formatDate(link.created_at)}
-                                                </span>
-                                                <div className="flex items-center gap-2">
-                                                    <Link
-                                                        to={`/adminek/links/${link.id}`}
-                                                        className="text-xs text-dark-300 hover:text-dark-100 underline"
+                                                <div className="flex items-center gap-2 text-xs text-dark-500">
+                                                    <span>{formatDate(link.created_at)}</span>
+                                                    {link.expires_at && (
+                                                        <span className="text-yellow-500" title={`Expires: ${new Date(link.expires_at).toLocaleString()}`}>
+                                                            → {new Date(link.expires_at).toLocaleDateString()}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div className="flex items-center gap-1">
+                                                    {/* Copy button */}
+                                                    <button
+                                                        onClick={() => handleCopy(`https://go.kinter.one/${link.slug}`)}
+                                                        className="p-1.5 sm:p-2 text-dark-400 hover:text-dark-200 transition-colors"
+                                                        title="Copy link"
                                                     >
-                                                        Details
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                                        </svg>
+                                                    </button>
+                                                    {/* Details button */}
+                                                    <Link
+                                                        to={`/admin/links/${link.id}`}
+                                                        className="p-1.5 sm:p-2 text-dark-400 hover:text-primary-400 transition-colors"
+                                                        title="View details"
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                                        </svg>
                                                     </Link>
+                                                    {/* Delete button */}
                                                     <button
                                                         onClick={() => handleDelete(link.id, activeTab === 'users')}
                                                         disabled={deleting === link.id}
-                                                        className="text-xs text-red-400 hover:text-red-300 underline disabled:opacity-50"
+                                                        className="p-1.5 sm:p-2 text-dark-400 hover:text-red-400 transition-colors disabled:opacity-50"
+                                                        title="Delete link"
                                                     >
-                                                        {deleting === link.id ? '...' : 'Delete'}
+                                                        {deleting === link.id ? (
+                                                            <div className="w-4 h-4 animate-spin rounded-full border-2 border-red-400 border-t-transparent"></div>
+                                                        ) : (
+                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                            </svg>
+                                                        )}
                                                     </button>
                                                 </div>
                                             </div>

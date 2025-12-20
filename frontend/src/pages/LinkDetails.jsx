@@ -84,7 +84,7 @@ function LinkDetails() {
                     </svg>
                     <h2 className="text-xl font-semibold text-dark-100 mb-2">Error</h2>
                     <p className="text-dark-400 mb-6">{error || 'Link not found'}</p>
-                    <Link to="/adminek/dashboard" className="btn-primary py-2 px-6">
+                    <Link to="/admin/dashboard" className="btn-primary py-2 px-6">
                         Back to Dashboard
                     </Link>
                 </div>
@@ -97,7 +97,7 @@ function LinkDetails() {
             {/* Header */}
             <header className="border-b border-dark-800">
                 <div className="max-w-7xl mx-auto px-4 py-4">
-                    <Link to="/adminek/dashboard" className="inline-flex items-center gap-2 text-dark-400 hover:text-dark-200 transition-colors">
+                    <Link to="/admin/dashboard" className="inline-flex items-center gap-2 text-dark-400 hover:text-dark-200 transition-colors">
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                         </svg>

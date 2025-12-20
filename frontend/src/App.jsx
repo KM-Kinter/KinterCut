@@ -4,6 +4,7 @@ import AdminLogin from './pages/AdminLogin'
 import AdminDashboard from './pages/AdminDashboard'
 import LinkDetails from './pages/LinkDetails'
 import LinkExpired from './pages/LinkExpired'
+import LinkNotFound from './pages/LinkNotFound'
 import { AuthProvider, useAuth } from './context/AuthContext'
 
 function ProtectedRoute({ children }) {
@@ -18,7 +19,7 @@ function ProtectedRoute({ children }) {
     }
 
     if (!isAuthenticated) {
-        return <Navigate to="/adminek" replace />
+        return <Navigate to="/admin" replace />
     }
 
     return children
@@ -37,18 +38,19 @@ function App() {
 
                 <Routes>
                     <Route path="/" element={<Home />} />
-                    <Route path="/adminek" element={<AdminLogin />} />
-                    <Route path="/adminek/dashboard" element={
+                    <Route path="/admin" element={<AdminLogin />} />
+                    <Route path="/admin/dashboard" element={
                         <ProtectedRoute>
                             <AdminDashboard />
                         </ProtectedRoute>
                     } />
-                    <Route path="/adminek/links/:id" element={
+                    <Route path="/admin/links/:id" element={
                         <ProtectedRoute>
                             <LinkDetails />
                         </ProtectedRoute>
                     } />
                     <Route path="/expired" element={<LinkExpired />} />
+                    <Route path="/not-found" element={<LinkNotFound />} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
             </div>
