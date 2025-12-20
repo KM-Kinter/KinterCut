@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"link-shortener/config"
 	"link-shortener/database"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 )
@@ -75,7 +77,21 @@ func main() {
 
 	// Admin routes
 	admin := api.Group("/admin")
-	admin.Post("/login", adminHandler.Login)
+	
+	// Rate limiter for login: 3 attempts per 24 hours per IP (brute-force protection)
+	loginLimiter := limiter.New(limiter.Config{
+		Max:        3,
+		Expiration: 24 * time.Hour,
+		KeyGenerator: func(c *fiber.Ctx) string {
+			return c.IP()
+		},
+		LimitReached: func(c *fiber.Ctx) error {
+			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
+				"error": "Too many login attempts. Your IP is blocked for 24 hours.",
+			})
+		},
+	})
+	admin.Post("/login", loginLimiter, adminHandler.Login)
 
 	// Protected admin routes
 	adminProtected := admin.Group("", middleware.AuthRequired(cfg))
